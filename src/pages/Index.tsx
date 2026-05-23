@@ -89,6 +89,24 @@ const SHOP_ITEMS: ShopItem[] = [
   { id: "s10", name: "Счастливая подкова", description: "+20% к шансу выигрыша в мини-играх", price: 12_000, oldPrice: 18_000, emoji: "🧲", category: "Бусты", badge: "ПОПУЛЯРНО", rating: 4.7, reviews: 1876 },
   { id: "s11", name: "Сундук новичка", description: "Набор из 3 случайных предметов", price: 1_500, emoji: "📦", category: "Сюрприз", badge: "ДЛЯ НОВЫХ", rating: 4.2, reviews: 4521 },
   { id: "s12", name: "Легендарный артефакт", description: "Невероятная редкость. Эффект неизвестен...", price: 99_999, emoji: "👑", category: "VIP", badge: "ЛЕГЕНДА", rating: 5.0, reviews: 42 },
+  { id: "s13", name: "Ракетный ускоритель", description: "+50% к скорости накопления монет", price: 7_500, oldPrice: 11_000, emoji: "🛸", category: "Бусты", badge: "СКИДКА", rating: 4.6, reviews: 1543 },
+  { id: "s14", name: "Кристальный шар", description: "Предсказывает результат следующей ставки", price: 18_000, emoji: "🔮", category: "Защита", badge: "МИФ", rating: 4.8, reviews: 720 },
+  { id: "s15", name: "Золотой пропуск", description: "Открывает доступ к секретным уровням", price: 25_000, emoji: "🎫", category: "VIP", rating: 4.9, reviews: 389 },
+  { id: "s16", name: "Скин «Лёд»", description: "Ледяной дизайн кнопки кликера", price: 4_500, emoji: "❄️", category: "Скины", rating: 4.5, reviews: 634 },
+  { id: "s17", name: "Скин «Молния»", description: "Электрический дизайн кнопки", price: 4_500, emoji: "⚡", category: "Скины", badge: "НОВИНКА", rating: 4.7, reviews: 451 },
+  { id: "s18", name: "Скин «Дракон»", description: "Легендарный дизайн для избранных", price: 9_900, emoji: "🐉", category: "Скины", badge: "РЕДКИЙ", rating: 5.0, reviews: 178 },
+  { id: "s19", name: "Мешок монет", description: "Моментально +50 000 монет на счёт", price: 35_000, oldPrice: 50_000, emoji: "💼", category: "Монеты", badge: "ВЫГОДА", rating: 4.9, reviews: 882 },
+  { id: "s20", name: "Банковский депозит", description: "Ежедневно начисляет 2% от баланса", price: 50_000, emoji: "📈", category: "VIP", rating: 4.8, reviews: 214 },
+  { id: "s21", name: "Авто-кликер PRO", description: "Кликает 5 раз в секунду, работает 24ч", price: 75_000, emoji: "🦾", category: "Авто", badge: "PRO", rating: 4.9, reviews: 267 },
+  { id: "s22", name: "Страховка от потерь", description: "Возвращает 50% при любом проигрыше", price: 10_000, emoji: "🧯", category: "Защита", rating: 4.6, reviews: 918 },
+  { id: "s23", name: "Сундук сокровищ", description: "Внутри от 10 000 до 500 000 монет!", price: 20_000, emoji: "🏴‍☠️", category: "Сюрприз", badge: "ГОРЯЧО", rating: 4.7, reviews: 2341 },
+  { id: "s24", name: "Клевер удачи", description: "x2 к выигрышам в слотах на 10 ставок", price: 8_500, emoji: "🍀", category: "Бусты", rating: 4.5, reviews: 1120 },
+  { id: "s25", name: "Энергетический напиток", description: "+100 монет за каждый клик на 3 минуты", price: 6_000, oldPrice: 9_000, emoji: "⚗️", category: "Бусты", badge: "ХИТ", rating: 4.8, reviews: 3302 },
+  { id: "s26", name: "Телепорт монет", description: "Удваивает любой перевод другому игроку", price: 40_000, emoji: "🌀", category: "VIP", rating: 4.7, reviews: 156 },
+  { id: "s27", name: "Магнит богатства", description: "Притягивает случайные монеты каждые 30 сек", price: 55_000, emoji: "🧲", category: "Авто", badge: "МОЩЬ", rating: 4.9, reviews: 88 },
+  { id: "s28", name: "Алхимический котёл", description: "Конвертирует любые проигрыши в опыт", price: 14_000, emoji: "🫧", category: "Защита", rating: 4.4, reviews: 472 },
+  { id: "s29", name: "Билет в рай", description: "Одноразовый 100% выигрыш в любой игре", price: 150_000, emoji: "🎟️", category: "Сюрприз", badge: "ТОПЧИК", rating: 5.0, reviews: 19 },
+  { id: "s30", name: "Трон миллионера", description: "Титул богатейшего игрока сервера", price: 500_000, emoji: "🪑", category: "VIP", badge: "ЭКСКЛЮЗИВ", rating: 5.0, reviews: 7 },
 ];
 
 const SHOP_CATEGORIES = ["Все", "Бусты", "VIP", "Скины", "Монеты", "Авто", "Защита", "Сюрприз"];
@@ -165,6 +183,15 @@ export default function Index() {
   const [guessBet, setGuessBet] = useState(100);
   const [guessResult, setGuessResult] = useState<string | null>(null);
   const [guessSecret, setGuessSecret] = useState<number | null>(null);
+
+  // Ультра Деп
+  const [ultraBet, setUltraBet] = useState(100_000);
+  const [ultraSpinning, setUltraSpinning] = useState(false);
+  const [ultraResult, setUltraResult] = useState<string | null>(null);
+  const [ultraReels, setUltraReels] = useState(["💎", "💎", "💎"]);
+  const [ultraPromoInput, setUltraPromoInput] = useState("");
+  const [ultraPromoMsg, setUltraPromoMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [ultraGuaranteedWins, setUltraGuaranteedWins] = useState(0); // счётчик гарантий 2026
 
   // Магазин
   const [shopCategory, setShopCategory] = useState("Все");
@@ -379,6 +406,75 @@ export default function Index() {
       setGuessResult(`😔 Неверно! Было ${guessSecret}. Потеря -${guessBet.toLocaleString()} 💰`);
     }
     setGuessSecret(null);
+  };
+
+  // ============ УЛЬТРА ДЕП ============
+  const ULTRA_SYMBOLS = ["💎", "🔱", "☠️", "🌑", "🔥", "⚡", "👑", "🌀"];
+
+  const spinUltra = () => {
+    if (ultraSpinning || player.balance < ultraBet) return;
+    setPlayer(p => ({ ...p, balance: p.balance - ultraBet }));
+    setUltraSpinning(true);
+    setUltraResult(null);
+
+    const intervals = [0, 1, 2].map(i =>
+      setInterval(() => {
+        setUltraReels(prev => {
+          const updated = [...prev];
+          updated[i] = ULTRA_SYMBOLS[Math.floor(Math.random() * ULTRA_SYMBOLS.length)];
+          return updated;
+        });
+      }, 60 + i * 20)
+    );
+
+    setTimeout(() => {
+      intervals.forEach(clearInterval);
+      const guaranteed = ultraGuaranteedWins > 0;
+      let final: string[];
+      if (guaranteed) {
+        const sym = ULTRA_SYMBOLS[Math.floor(Math.random() * ULTRA_SYMBOLS.length)];
+        final = [sym, sym, sym];
+        setUltraGuaranteedWins(g => g - 1);
+      } else {
+        final = Array.from({ length: 3 }, () => ULTRA_SYMBOLS[Math.floor(Math.random() * ULTRA_SYMBOLS.length)]);
+      }
+      setUltraReels(final);
+      setUltraSpinning(false);
+
+      let win = 0;
+      let msg = "";
+      if (final[0] === final[1] && final[1] === final[2]) {
+        if (final[0] === "💎") { win = ultraBet * 50; msg = `💎 АЛМАЗНЫЙ ДЖЕКПОТ! +${win.toLocaleString()} 💰`; }
+        else if (final[0] === "👑") { win = ultraBet * 30; msg = `👑 КОРОЛЕВСКИЙ ВЫИГРЫШ! +${win.toLocaleString()} 💰`; }
+        else if (final[0] === "☠️") { win = ultraBet * 100; msg = `☠️ СМЕРТЬ КАЗИНО! +${win.toLocaleString()} 💰 🤯`; }
+        else { win = ultraBet * 15; msg = `🔥 ТРИ ОДИНАКОВЫХ! +${win.toLocaleString()} 💰`; }
+      } else if (final[0] === final[1] || final[1] === final[2] || final[0] === final[2]) {
+        win = ultraBet * 3; msg = `⚡ ПАРА! +${win.toLocaleString()} 💰`;
+      } else {
+        msg = `💀 Проигрыш. -${ultraBet.toLocaleString()} 💰`;
+      }
+
+      if (win > 0) {
+        setPlayer(p => ({ ...p, balance: p.balance + win, totalEarned: p.totalEarned + win }));
+        addTransaction({ type: "game_win", amount: win, description: `Ультра Деп: ${msg.slice(0, 50)}` });
+      } else {
+        addTransaction({ type: "game_lose", amount: -ultraBet, description: "Ультра Деп: без выигрыша" });
+      }
+      setUltraResult(msg);
+    }, 2000);
+  };
+
+  const applyUltraPromo = () => {
+    const code = ultraPromoInput.trim().toUpperCase();
+    if (code === "2026") {
+      setUltraGuaranteedWins(g => g + 20);
+      setUltraPromoMsg({ text: "🚀 АКТИВИРОВАНО! Следующие 20 прокруток — 100% выигрыш!", ok: true });
+      setUltraPromoInput("");
+      setTimeout(() => setUltraPromoMsg(null), 5000);
+    } else {
+      setUltraPromoMsg({ text: "❌ Неверный промокод", ok: false });
+      setTimeout(() => setUltraPromoMsg(null), 3000);
+    }
   };
 
   // ============ МАГАЗИН ============
@@ -847,6 +943,123 @@ export default function Index() {
               >
                 {rouletteSpinning ? "🎡 Крутится..." : !rouletteChoice ? "Выбери цвет" : `ПОСТАВИТЬ (${rouletteBet} 💰)`}
               </button>
+            </div>
+
+            {/* УЛЬТРА ДЕП */}
+            <div className="game-card p-5 relative overflow-hidden" style={{ border: "2px solid hsl(270 80% 50%)", background: "linear-gradient(135deg, hsl(270 40% 8%) 0%, hsl(240 18% 7%) 100%)", boxShadow: "0 0 30px hsl(270 80% 40% / 0.3), 0 0 80px hsl(270 80% 40% / 0.1)" }}>
+              {/* Фоновый пульс */}
+              <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 50%, hsl(270 100% 60%), transparent 70%)" }} />
+
+              <div className="relative">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-orbitron font-bold text-xl flex items-center gap-2" style={{ color: "#bf80ff" }}>
+                    ☠️ УЛЬТРА ДЕП
+                  </h3>
+                  <div className="text-xs font-bold px-3 py-1 rounded-full animate-neon-pulse" style={{ background: "hsl(270 80% 30%)", color: "#bf80ff" }}>
+                    MAX x100
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Ставки от 10 000 до 1 000 000 💰 · Только для смелых</p>
+
+                {/* Гарантия от промо */}
+                {ultraGuaranteedWins > 0 && (
+                  <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl font-bold text-sm animate-bounce-in" style={{ background: "hsl(142 60% 15%)", border: "1px solid hsl(142 80% 35%)", color: "#4ade80" }}>
+                    <span>🚀</span>
+                    <span>Гарантированных побед: <span className="font-orbitron text-lg">{ultraGuaranteedWins}</span></span>
+                  </div>
+                )}
+
+                {/* Барабаны */}
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  {ultraReels.map((sym, i) => (
+                    <div key={i} className="flex items-center justify-center rounded-xl text-4xl h-20" style={{ background: "hsl(240 20% 5%)", border: "2px solid hsl(270 50% 30%)" }}>
+                      <span className={ultraSpinning ? "blur-sm" : ""}>{sym}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Ставки */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Ставка:</span>
+                    <span className="font-orbitron font-bold text-sm" style={{ color: "#bf80ff" }}>{ultraBet.toLocaleString()} 💰</span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {[10_000, 50_000, 100_000, 250_000, 500_000, 1_000_000].map(b => (
+                      <button
+                        key={b}
+                        onClick={() => setUltraBet(b)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border"
+                        style={ultraBet === b
+                          ? { background: "hsl(270 70% 45%)", color: "white", borderColor: "hsl(270 80% 60%)" }
+                          : { background: "hsl(240 15% 15%)", color: "hsl(270 40% 70%)", borderColor: "hsl(270 30% 30%)" }
+                        }
+                      >
+                        {b >= 1_000_000 ? "1М" : b >= 500_000 ? "500К" : b >= 250_000 ? "250К" : b >= 100_000 ? "100К" : b >= 50_000 ? "50К" : "10К"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Результат */}
+                {ultraResult && (
+                  <div className={`text-center py-3 px-4 rounded-xl mb-4 font-bold text-sm animate-bounce-in ${ultraResult.includes("💀") ? "bg-red-900/30 text-red-300 border border-red-800" : "text-green-300 border border-green-700"}`}
+                    style={!ultraResult.includes("💀") ? { background: "hsl(142 40% 10%)" } : {}}>
+                    {ultraResult}
+                  </div>
+                )}
+
+                {/* Промокод 2026 */}
+                <div className="rounded-xl p-3 mb-4 space-y-2" style={{ background: "hsl(270 30% 10%)", border: "1px solid hsl(270 40% 25%)" }}>
+                  <div className="flex items-center gap-2">
+                    <Icon name="Sparkles" size={14} style={{ color: "#bf80ff" }} />
+                    <span className="text-xs font-semibold" style={{ color: "#bf80ff" }}>Промокод Ультра Деп (можно вводить повторно)</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 rounded-lg px-3 py-2 text-sm font-orbitron tracking-widest uppercase focus:outline-none transition-colors"
+                      style={{ background: "hsl(240 20% 8%)", border: "1px solid hsl(270 40% 30%)", color: "#bf80ff" }}
+                      placeholder="ПРОМОКОД..."
+                      value={ultraPromoInput}
+                      onChange={e => setUltraPromoInput(e.target.value.toUpperCase())}
+                      onKeyDown={e => e.key === "Enter" && applyUltraPromo()}
+                      maxLength={10}
+                    />
+                    <button
+                      onClick={applyUltraPromo}
+                      className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:scale-105"
+                      style={{ background: "linear-gradient(135deg, hsl(270 70% 45%), hsl(290 80% 50%))" }}
+                    >
+                      ✓
+                    </button>
+                  </div>
+                  {ultraPromoMsg && (
+                    <div className={`text-xs font-semibold py-2 px-3 rounded-lg animate-fade-up ${ultraPromoMsg.ok ? "text-green-300 bg-green-900/30" : "text-red-300 bg-red-900/30"}`}>
+                      {ultraPromoMsg.text}
+                    </div>
+                  )}
+                </div>
+
+                {/* Кнопка */}
+                <button
+                  onClick={spinUltra}
+                  disabled={ultraSpinning || player.balance < ultraBet}
+                  className="w-full py-4 rounded-xl font-orbitron font-black text-lg text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100"
+                  style={{ background: "linear-gradient(135deg, hsl(270 70% 40%), hsl(290 90% 45%), hsl(310 80% 50%))", boxShadow: ultraSpinning ? "none" : "0 0 20px hsl(270 80% 50% / 0.5)" }}
+                >
+                  {ultraSpinning ? "💀 КРУТИТСЯ..." : `☠️ УЛЬТРА СПИН (${ultraBet.toLocaleString()} 💰)`}
+                </button>
+
+                {/* Мультипликаторы */}
+                <div className="grid grid-cols-4 gap-2 mt-4 text-center">
+                  {[{ sym: "3×💎", mult: "x50" }, { sym: "3×👑", mult: "x30" }, { sym: "3×☠️", mult: "x100" }, { sym: "3×любых", mult: "x15" }].map(m => (
+                    <div key={m.sym} className="rounded-lg py-2 px-1" style={{ background: "hsl(240 20% 8%)", border: "1px solid hsl(270 30% 20%)" }}>
+                      <div className="text-xs" style={{ color: "#bf80ff" }}>{m.sym}</div>
+                      <div className="font-orbitron font-black text-sm text-yellow-400">{m.mult}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* УГАДАЙ ЧИСЛО */}
