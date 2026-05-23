@@ -54,7 +54,46 @@ const INITIAL_PLAYERS: Player[] = [
 
 const SLOT_SYMBOLS = ["💎", "7️⃣", "🍋", "🍒", "⭐", "🔔", "💰", "🎰"];
 
-type Tab = "clicker" | "profile" | "transfer" | "leaders" | "logs" | "games";
+// ============ ПРОМОКОДЫ ============
+const PROMO_CODES: Record<string, { amount: number; label: string }> = {
+  "4444": { amount: 1_000_000, label: "Секретный джекпот" },
+  "СТАРТ": { amount: 5_000, label: "Приветственный бонус" },
+  "УДАЧА": { amount: 25_000, label: "Код удачи" },
+  "БАНК2024": { amount: 50_000, label: "Банковский промо" },
+};
+
+// ============ ТОВАРЫ МАГАЗИНА ============
+interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  oldPrice?: number;
+  emoji: string;
+  category: string;
+  badge?: string;
+  rating: number;
+  reviews: number;
+}
+
+const SHOP_ITEMS: ShopItem[] = [
+  { id: "s1", name: "Золотой множитель x2", description: "Удваивает все клики на 5 минут", price: 3_000, oldPrice: 6_000, emoji: "⚡", category: "Бусты", badge: "ХИТ", rating: 4.9, reviews: 1243 },
+  { id: "s2", name: "Алмазный VIP статус", description: "Особый бейдж и +500 монет в день", price: 15_000, emoji: "💎", category: "VIP", badge: "PREMIUM", rating: 5.0, reviews: 872 },
+  { id: "s3", name: "Шкатулка удачи", description: "Случайный приз от 1 000 до 100 000 монет", price: 5_000, emoji: "🎁", category: "Сюрприз", rating: 4.7, reviews: 3412 },
+  { id: "s4", name: "Защитный щит", description: "Защищает от проигрыша один раз", price: 2_500, emoji: "🛡️", category: "Защита", rating: 4.5, reviews: 654 },
+  { id: "s5", name: "Монетный дождь", description: "Моментально +10 000 монет на счёт", price: 8_000, oldPrice: 12_000, emoji: "🌧️", category: "Монеты", badge: "СКИДКА", rating: 4.8, reviews: 2109 },
+  { id: "s6", name: "Авто-кликер (1 час)", description: "Автоматически кликает раз в секунду", price: 20_000, emoji: "🤖", category: "Авто", badge: "НОВИНКА", rating: 4.6, reviews: 531 },
+  { id: "s7", name: "Скин «Огонь»", description: "Огненный дизайн кнопки кликера", price: 4_500, emoji: "🔥", category: "Скины", rating: 4.4, reviews: 987 },
+  { id: "s8", name: "Скин «Космос»", description: "Космический дизайн кнопки кликера", price: 4_500, emoji: "🚀", category: "Скины", rating: 4.3, reviews: 765 },
+  { id: "s9", name: "Банковский сейф", description: "Хранит 5% прибыли от каждого клика", price: 30_000, emoji: "🏦", category: "VIP", rating: 4.9, reviews: 321 },
+  { id: "s10", name: "Счастливая подкова", description: "+20% к шансу выигрыша в мини-играх", price: 12_000, oldPrice: 18_000, emoji: "🧲", category: "Бусты", badge: "ПОПУЛЯРНО", rating: 4.7, reviews: 1876 },
+  { id: "s11", name: "Сундук новичка", description: "Набор из 3 случайных предметов", price: 1_500, emoji: "📦", category: "Сюрприз", badge: "ДЛЯ НОВЫХ", rating: 4.2, reviews: 4521 },
+  { id: "s12", name: "Легендарный артефакт", description: "Невероятная редкость. Эффект неизвестен...", price: 99_999, emoji: "👑", category: "VIP", badge: "ЛЕГЕНДА", rating: 5.0, reviews: 42 },
+];
+
+const SHOP_CATEGORIES = ["Все", "Бусты", "VIP", "Скины", "Монеты", "Авто", "Защита", "Сюрприз"];
+
+type Tab = "clicker" | "profile" | "transfer" | "leaders" | "logs" | "games" | "shop";
 
 export default function Index() {
   const [currentTab, setCurrentTab] = useState<Tab>("clicker");
@@ -126,6 +165,17 @@ export default function Index() {
   const [guessBet, setGuessBet] = useState(100);
   const [guessResult, setGuessResult] = useState<string | null>(null);
   const [guessSecret, setGuessSecret] = useState<number | null>(null);
+
+  // Магазин
+  const [shopCategory, setShopCategory] = useState("Все");
+  const [shopSearch, setShopSearch] = useState("");
+  const [boughtItems, setBoughtItems] = useState<Set<string>>(new Set());
+  const [shopMsg, setShopMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+
+  // Промокоды
+  const [promoInput, setPromoInput] = useState("");
+  const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [usedPromos, setUsedPromos] = useState<Set<string>>(new Set());
 
   const addTransaction = useCallback((tx: Omit<Transaction, "id" | "timestamp">) => {
     const newTx: Transaction = { ...tx, id: `t${Date.now()}`, timestamp: new Date() };
@@ -329,6 +379,37 @@ export default function Index() {
       setGuessResult(`😔 Неверно! Было ${guessSecret}. Потеря -${guessBet.toLocaleString()} 💰`);
     }
     setGuessSecret(null);
+  };
+
+  // ============ МАГАЗИН ============
+  const buyShopItem = (item: ShopItem) => {
+    if (boughtItems.has(item.id) || player.balance < item.price) return;
+    setPlayer(p => ({ ...p, balance: p.balance - item.price }));
+    setBoughtItems(prev => new Set([...prev, item.id]));
+    addTransaction({ type: "transfer_out", amount: item.price, description: `Магазин: ${item.name}` });
+    setShopMsg({ id: item.id, text: `✅ Куплено: ${item.name}!`, ok: true });
+    setTimeout(() => setShopMsg(null), 3000);
+  };
+
+  const filteredItems = SHOP_ITEMS.filter(item => {
+    const matchCat = shopCategory === "Все" || item.category === shopCategory;
+    const matchSearch = item.name.toLowerCase().includes(shopSearch.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  // ============ ПРОМОКОД ============
+  const applyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    if (usedPromos.has(code)) { setPromoMsg({ text: "❌ Этот промокод уже использован", ok: false }); return; }
+    const promo = PROMO_CODES[code];
+    if (!promo) { setPromoMsg({ text: "❌ Промокод не найден", ok: false }); return; }
+    setPlayer(p => ({ ...p, balance: p.balance + promo.amount, totalEarned: p.totalEarned + promo.amount }));
+    setUsedPromos(prev => new Set([...prev, code]));
+    addTransaction({ type: "game_win", amount: promo.amount, description: `Промокод «${code}»: ${promo.label}` });
+    setPromoMsg({ text: `🎉 Промокод активирован! +${promo.amount.toLocaleString()} 💰 — ${promo.label}`, ok: true });
+    setPromoInput("");
+    setTimeout(() => setPromoMsg(null), 5000);
   };
 
   // ============ ЛИДЕРЫ ============
@@ -569,9 +650,9 @@ export default function Index() {
   const tabs: { id: Tab; icon: string; label: string }[] = [
     { id: "clicker", icon: "MousePointerClick", label: "Кликер" },
     { id: "games", icon: "Dices", label: "Игры" },
+    { id: "shop", icon: "ShoppingBag", label: "Магазин" },
     { id: "transfer", icon: "ArrowLeftRight", label: "Перевод" },
     { id: "leaders", icon: "Trophy", label: "Топ" },
-    { id: "logs", icon: "ScrollText", label: "Логи" },
     { id: "profile", icon: "User", label: "Профиль" },
   ];
 
@@ -939,6 +1020,167 @@ export default function Index() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ====== МАГАЗИН ====== */}
+        {currentTab === "shop" && (
+          <div className="space-y-5 animate-fade-up">
+            {/* Заголовок в стиле OZON */}
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">🛒</div>
+              <div>
+                <h2 className="font-orbitron text-2xl font-bold" style={{ color: "#005BFF" }}>OZON</h2>
+                <p className="text-xs text-muted-foreground">Игровой магазин • Покупай за монеты</p>
+              </div>
+              <div className="ml-auto game-card px-3 py-1.5 rounded-xl text-xs font-bold text-yellow-300 font-orbitron">
+                💰 {player.balance.toLocaleString()}
+              </div>
+            </div>
+
+            {/* ===== ПРОМОКОД ===== */}
+            <div className="game-card p-4 border border-blue-800/50" style={{ background: "linear-gradient(135deg, hsl(220 40% 10%) 0%, hsl(240 18% 9%) 100%)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Icon name="Tag" size={18} className="text-blue-400" />
+                <span className="font-bold text-sm">Введи промокод</span>
+                <span className="text-xs text-muted-foreground ml-auto">Попробуй «4444» 😉</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 bg-muted border border-border rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500 transition-colors font-orbitron tracking-widest uppercase text-sm"
+                  placeholder="ПРОМОКОД..."
+                  value={promoInput}
+                  onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === "Enter" && applyPromo()}
+                  maxLength={16}
+                />
+                <button
+                  onClick={applyPromo}
+                  className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:scale-105 active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #005BFF, #0041CC)" }}
+                >
+                  Применить
+                </button>
+              </div>
+              {promoMsg && (
+                <div className={`mt-3 py-2.5 px-4 rounded-xl text-sm font-semibold animate-fade-up ${promoMsg.ok ? "bg-green-900/40 text-green-300 border border-green-700/50" : "bg-red-900/40 text-red-300 border border-red-700/50"}`}>
+                  {promoMsg.text}
+                </div>
+              )}
+            </div>
+
+            {/* Поиск */}
+            <div className="relative">
+              <Icon name="Search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                className="w-full bg-muted border border-border rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500 transition-colors"
+                placeholder="Поиск товаров..."
+                value={shopSearch}
+                onChange={e => setShopSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Категории */}
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {SHOP_CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setShopCategory(cat)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all shrink-0 ${
+                    shopCategory === cat
+                      ? "text-white" : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                  style={shopCategory === cat ? { background: "linear-gradient(135deg, #005BFF, #0041CC)" } : {}}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Сетка товаров */}
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="text-4xl mb-2">🔍</div>
+                <p>Ничего не найдено</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {filteredItems.map(item => {
+                  const bought = boughtItems.has(item.id);
+                  const canBuy = player.balance >= item.price && !bought;
+                  const isJustBought = shopMsg?.id === item.id && shopMsg.ok;
+                  return (
+                    <div
+                      key={item.id}
+                      className={`game-card p-3 flex flex-col gap-2 relative transition-all ${isJustBought ? "border border-green-500/70" : bought ? "border border-yellow-700/50 opacity-70" : "hover:border-blue-700/50"}`}
+                    >
+                      {/* Бейдж */}
+                      {item.badge && !bought && (
+                        <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full ${
+                          item.badge === "ХИТ" ? "bg-red-600 text-white" :
+                          item.badge === "PREMIUM" ? "bg-yellow-500 text-black" :
+                          item.badge === "СКИДКА" ? "bg-orange-500 text-white" :
+                          item.badge === "НОВИНКА" ? "bg-green-600 text-white" :
+                          item.badge === "ЛЕГЕНДА" ? "bg-purple-600 text-white" :
+                          item.badge === "ПОПУЛЯРНО" ? "bg-pink-600 text-white" :
+                          "bg-blue-600 text-white"
+                        }`}>
+                          {item.badge}
+                        </div>
+                      )}
+                      {bought && (
+                        <div className="absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full bg-green-700 text-white">
+                          ✓ КУПЛЕНО
+                        </div>
+                      )}
+
+                      {/* Иконка товара */}
+                      <div className="text-4xl text-center py-2 bg-muted rounded-xl">{item.emoji}</div>
+
+                      {/* Название */}
+                      <div className="font-semibold text-sm leading-tight text-foreground">{item.name}</div>
+                      <div className="text-xs text-muted-foreground leading-snug">{item.description}</div>
+
+                      {/* Рейтинг */}
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="text-yellow-400">★</span>
+                        <span className="text-foreground font-semibold">{item.rating}</span>
+                        <span className="text-muted-foreground">({item.reviews.toLocaleString()})</span>
+                      </div>
+
+                      {/* Цена */}
+                      <div className="mt-auto">
+                        {item.oldPrice && (
+                          <div className="text-xs text-muted-foreground line-through">{item.oldPrice.toLocaleString()} 💰</div>
+                        )}
+                        <div className="font-orbitron font-black text-lg text-yellow-300">{item.price.toLocaleString()} 💰</div>
+                      </div>
+
+                      {/* Кнопка */}
+                      <button
+                        onClick={() => buyShopItem(item)}
+                        disabled={!canBuy}
+                        className={`w-full py-2 rounded-xl text-sm font-bold transition-all ${
+                          bought ? "bg-green-900/30 text-green-400 cursor-not-allowed" :
+                          canBuy ? "text-white hover:scale-105 active:scale-95" :
+                          "bg-muted text-muted-foreground cursor-not-allowed"
+                        }`}
+                        style={canBuy && !bought ? { background: "linear-gradient(135deg, #005BFF, #0041CC)" } : {}}
+                      >
+                        {bought ? "✓ В инвентаре" : !canBuy ? "Недостаточно 💰" : "Купить"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Уведомление о покупке */}
+            {shopMsg && shopMsg.ok && (
+              <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-green-800 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-2xl animate-bounce-in whitespace-nowrap">
+                {shopMsg.text}
+              </div>
+            )}
           </div>
         )}
 
