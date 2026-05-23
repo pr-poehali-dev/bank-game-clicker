@@ -1,5 +1,21 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+// ============ УТИЛИТЫ КАПЧИ ============
+function generateCaptcha() {
+  const ops = ["+", "-", "×"] as const;
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a: number, b: number, answer: number;
+  if (op === "+") { a = Math.floor(Math.random() * 20) + 1; b = Math.floor(Math.random() * 20) + 1; answer = a + b; }
+  else if (op === "-") { a = Math.floor(Math.random() * 20) + 10; b = Math.floor(Math.random() * 10) + 1; answer = a - b; }
+  else { a = Math.floor(Math.random() * 9) + 2; b = Math.floor(Math.random() * 9) + 2; answer = a * b; }
+  return { question: `${a} ${op} ${b} = ?`, answer };
+}
+
+// Простое хеширование пароля (XOR + base64 для браузера)
+function hashPassword(password: string): string {
+  return btoa(password.split("").map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ (i % 7 + 3))).join(""));
+}
 
 // ============ ТИПЫ ============
 interface Player {
@@ -44,10 +60,28 @@ export default function Index() {
   const [currentTab, setCurrentTab] = useState<Tab>("clicker");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+
+  // Регистрация
   const [regName, setRegName] = useState("");
   const [regAvatar, setRegAvatar] = useState("🦁");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+  const [regShowPass, setRegShowPass] = useState(false);
+  const [regErrors, setRegErrors] = useState<string[]>([]);
+
+  // Капча
+  const [captcha, setCaptcha] = useState(generateCaptcha);
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaError, setCaptchaError] = useState(false);
+
+  // Вход
   const [loginName, setLoginName] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginShowPass, setLoginShowPass] = useState(false);
   const [loginError, setLoginError] = useState("");
+
+  // База паролей (имя → хэш)
+  const [passwordsDb, setPasswordsDb] = useState<Record<string, string>>({});
 
   const [player, setPlayer] = useState<Player>({
     id: "p1",
@@ -132,8 +166,23 @@ export default function Index() {
 
   // ============ РЕГИСТРАЦИЯ ============
   const handleRegister = () => {
-    if (!regName.trim()) return;
+    const errors: string[] = [];
+    if (!regName.trim()) errors.push("Введи имя");
+    if (regPassword.length < 6) errors.push("Пароль минимум 6 символов");
+    if (regPassword !== regPasswordConfirm) errors.push("Пароли не совпадают");
+    const captchaVal = parseInt(captchaInput);
+    if (isNaN(captchaVal) || captchaVal !== captcha.answer) {
+      errors.push("Неверный ответ в капче");
+      setCaptchaError(true);
+      setCaptcha(generateCaptcha());
+      setCaptchaInput("");
+    } else {
+      setCaptchaError(false);
+    }
+    if (errors.length > 0) { setRegErrors(errors); return; }
+    setRegErrors([]);
     const newPlayer: Player = { id: `p${Date.now()}`, name: regName.trim(), balance: 1000, totalEarned: 1000, avatar: regAvatar };
+    setPasswordsDb(db => ({ ...db, [regName.trim().toLowerCase()]: hashPassword(regPassword) }));
     setPlayer(newPlayer);
     setIsLoggedIn(true);
     setShowRegister(false);
@@ -143,10 +192,20 @@ export default function Index() {
   const handleLogin = () => {
     const found = allPlayers.find(p => p.name.toLowerCase() === loginName.toLowerCase());
     if (!found) { setLoginError("Игрок не найден"); return; }
+    const storedHash = passwordsDb[loginName.toLowerCase()];
+    if (storedHash && storedHash !== hashPassword(loginPassword)) {
+      setLoginError("Неверный пароль");
+      return;
+    }
     setPlayer(found);
     setIsLoggedIn(true);
     setLoginError("");
   };
+
+  // Сброс капчи при переходе на регистрацию
+  useEffect(() => {
+    if (showRegister) { setCaptcha(generateCaptcha()); setCaptchaInput(""); setCaptchaError(false); setRegErrors([]); }
+  }, [showRegister]);
 
   // ============ ПЕРЕВОД ============
   const handleTransfer = () => {
@@ -295,6 +354,8 @@ export default function Index() {
             {!showRegister ? (
               <>
                 <h2 className="text-xl font-bold text-center mb-2">Войти в игру</h2>
+
+                {/* Имя */}
                 <input
                   className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-yellow-500 transition-colors"
                   placeholder="Твоё имя..."
@@ -302,7 +363,33 @@ export default function Index() {
                   onChange={e => setLoginName(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleLogin()}
                 />
-                {loginError && <p className="text-red-400 text-sm text-center">{loginError}</p>}
+
+                {/* Пароль */}
+                <div className="relative">
+                  <input
+                    type={loginShowPass ? "text" : "password"}
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-yellow-500 transition-colors"
+                    placeholder="Пароль..."
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLoginShowPass(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Icon name={loginShowPass ? "EyeOff" : "Eye"} size={18} />
+                  </button>
+                </div>
+
+                {loginError && (
+                  <div className="flex items-center gap-2 bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-2">
+                    <Icon name="AlertCircle" size={16} className="text-red-400 shrink-0" />
+                    <p className="text-red-400 text-sm">{loginError}</p>
+                  </div>
+                )}
+
                 <button onClick={handleLogin} className="btn-gold w-full py-3 rounded-xl text-lg font-orbitron">
                   ВОЙТИ
                 </button>
@@ -315,12 +402,80 @@ export default function Index() {
             ) : (
               <>
                 <h2 className="text-xl font-bold text-center mb-2">Регистрация</h2>
+
+                {/* Имя */}
                 <input
                   className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-yellow-500 transition-colors"
                   placeholder="Твоё имя..."
                   value={regName}
                   onChange={e => setRegName(e.target.value)}
                 />
+
+                {/* Пароль */}
+                <div className="relative">
+                  <input
+                    type={regShowPass ? "text" : "password"}
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-yellow-500 transition-colors"
+                    placeholder="Придумай пароль (мин. 6 символов)..."
+                    value={regPassword}
+                    onChange={e => setRegPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRegShowPass(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Icon name={regShowPass ? "EyeOff" : "Eye"} size={18} />
+                  </button>
+                </div>
+
+                {/* Подтверждение пароля */}
+                <div className="relative">
+                  <input
+                    type={regShowPass ? "text" : "password"}
+                    className={`w-full bg-muted border rounded-xl px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors ${
+                      regPasswordConfirm && regPassword !== regPasswordConfirm
+                        ? "border-red-500 focus:border-red-400"
+                        : regPasswordConfirm && regPassword === regPasswordConfirm
+                        ? "border-green-500"
+                        : "border-border focus:border-yellow-500"
+                    }`}
+                    placeholder="Повтори пароль..."
+                    value={regPasswordConfirm}
+                    onChange={e => setRegPasswordConfirm(e.target.value)}
+                  />
+                  {regPasswordConfirm && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Icon
+                        name={regPassword === regPasswordConfirm ? "CheckCircle" : "XCircle"}
+                        size={18}
+                        className={regPassword === regPasswordConfirm ? "text-green-400" : "text-red-400"}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Индикатор силы пароля */}
+                {regPassword && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      {[...Array(4)].map((_, i) => {
+                        const strength = regPassword.length >= 12 ? 4 : regPassword.length >= 8 ? 3 : regPassword.length >= 6 ? 2 : 1;
+                        return (
+                          <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < strength
+                            ? strength === 1 ? "bg-red-500" : strength === 2 ? "bg-yellow-500" : strength === 3 ? "bg-blue-400" : "bg-green-400"
+                            : "bg-muted"}`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Сложность: {regPassword.length >= 12 ? "🔒 Отличная" : regPassword.length >= 8 ? "🛡️ Хорошая" : regPassword.length >= 6 ? "⚠️ Слабая" : "❌ Слишком короткий"}
+                    </p>
+                  </div>
+                )}
+
+                {/* Аватар */}
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">Выбери аватар:</p>
                   <div className="grid grid-cols-5 gap-2">
@@ -335,6 +490,53 @@ export default function Index() {
                     ))}
                   </div>
                 </div>
+
+                {/* КАПЧА */}
+                <div className={`rounded-xl border-2 p-4 space-y-3 transition-all ${captchaError ? "border-red-500 bg-red-900/10" : "border-border bg-muted/50"}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon name="ShieldCheck" size={16} className="text-yellow-400" />
+                    <span className="text-sm font-semibold text-muted-foreground">Проверка — не бот ли ты?</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="font-orbitron text-xl font-black text-yellow-300 bg-muted rounded-xl px-4 py-2 tracking-widest select-none border border-yellow-800/50">
+                      {captcha.question}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setCaptcha(generateCaptcha()); setCaptchaInput(""); setCaptchaError(false); }}
+                      className="text-muted-foreground hover:text-yellow-400 transition-colors"
+                      title="Новый вопрос"
+                    >
+                      <Icon name="RefreshCw" size={18} />
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    className={`w-full bg-muted border rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors ${captchaError ? "border-red-500" : "border-border focus:border-yellow-500"}`}
+                    placeholder="Твой ответ..."
+                    value={captchaInput}
+                    onChange={e => { setCaptchaInput(e.target.value); setCaptchaError(false); }}
+                    onKeyDown={e => e.key === "Enter" && handleRegister()}
+                  />
+                  {captchaError && (
+                    <p className="text-red-400 text-xs flex items-center gap-1">
+                      <Icon name="X" size={12} /> Неверно! Попробуй ещё раз
+                    </p>
+                  )}
+                </div>
+
+                {/* Ошибки */}
+                {regErrors.length > 0 && (
+                  <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 space-y-1">
+                    {regErrors.map((e, i) => (
+                      <p key={i} className="text-red-400 text-sm flex items-center gap-2">
+                        <Icon name="AlertCircle" size={14} className="shrink-0" />
+                        {e}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
                 <button onClick={handleRegister} className="btn-gold w-full py-3 rounded-xl text-lg font-orbitron">
                   НАЧАТЬ ИГРУ +1000 💰
                 </button>
